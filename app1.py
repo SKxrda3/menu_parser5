@@ -28,7 +28,8 @@ ocr = PaddleOCR(
 def preprocess_image(image_path):
     with Image.open(image_path) as img:
         img = img.convert('RGB')
-        img.thumbnail((1024, 1024), Image.ANTIALIAS)
+        # img.thumbnail((1024, 1024), Image.ANTIALIAS)
+        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
         img.save(image_path)
 
 mysql_config = {
