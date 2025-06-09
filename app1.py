@@ -349,11 +349,14 @@ def upload_menu():
     except Exception as e:
         return jsonify({"error": f"Processing failed: {str(e)}"}), 500
 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == 'folder':
-        vender_id = 1
-        process_folder("menu1", mysql_config, vender_id)
-    else:
-        port = int(os.environ.get("PORT", 5000))  # Render provides PORT env var
-        app.run(host="0.0.0.0", port=port, debug=False)
+
+# if __name__ == "__main__":
+#     if len(sys.argv) > 1 and sys.argv[1] == 'folder':
+#         vender_id = 1
+#         process_folder("menu1", mysql_config, vender_id)
+#     else:
+#         port = int(os.environ.get("PORT", 5000))  # Render provides PORT env var
+#         app.run(host="0.0.0.0", port=port, debug=False)
