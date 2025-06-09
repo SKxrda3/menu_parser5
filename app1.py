@@ -275,6 +275,38 @@ def process_folder(folder_path, mysql_config, vender_id):
     else:
         print("No menu data extracted from images.")
 
+# @app.route('/upload-menu', methods=['POST'])
+# def upload_menu():
+#     if 'image' not in request.files:
+#         return jsonify({"error": "Image file is missing."}), 400
+#     if 'vender_id' not in request.form:
+#         return jsonify({"error": "vender_id is missing."}), 400
+
+#     file = request.files['image']
+#     vender_id = request.form['vender_id']
+#     filename = secure_filename(file.filename)
+#     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#     file.save(file_path)
+
+#     # OCR & parsing
+#     boxes = extract_boxes(file_path)
+#     rows = group_by_rows(boxes)
+#     final_data = assign_categories(rows)
+#     menu = parse_rows_to_menu(final_data, image_name=filename)
+
+#     ignore_phrases = ["preparation time", "serving size", "cooking time", "calories"]
+#     filtered_data = [
+#         entry for entry in menu
+#         if not any(phrase in (entry["item"] + " " + entry["category"] + " " + entry.get("description", "")).lower()
+#                    for phrase in ignore_phrases)
+#     ]
+
+#     if filtered_data:
+#         insert_into_mysql(filtered_data, vender_id=vender_id, **mysql_config)
+#         return jsonify({"message": "Menu extracted and inserted into DB.", "items": filtered_data}), 200
+#     else:
+#         return jsonify({"message": "No valid menu data found in the image."}), 200
+
 @app.route('/upload-menu', methods=['POST'])
 def upload_menu():
     if 'image' not in request.files:
@@ -284,29 +316,38 @@ def upload_menu():
 
     file = request.files['image']
     vender_id = request.form['vender_id']
+
+    if file.filename == '':
+        return jsonify({"error": "Empty filename."}), 400
+
     filename = secure_filename(file.filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(image_path)
 
-    # OCR & parsing
-    boxes = extract_boxes(file_path)
-    rows = group_by_rows(boxes)
-    final_data = assign_categories(rows)
-    menu = parse_rows_to_menu(final_data, image_name=filename)
+    preprocess_image(image_path)  # Resize for consistency
 
-    ignore_phrases = ["preparation time", "serving size", "cooking time", "calories"]
-    filtered_data = [
-        entry for entry in menu
-        if not any(phrase in (entry["item"] + " " + entry["category"] + " " + entry.get("description", "")).lower()
-                   for phrase in ignore_phrases)
-    ]
+    try:
+        boxes = extract_boxes(image_path)
+        rows = group_by_rows(boxes)
+        final_data = assign_categories(rows)
+        menu = parse_rows_to_menu(final_data, image_name=filename)
 
-    if filtered_data:
-        insert_into_mysql(filtered_data, vender_id=vender_id, **mysql_config)
-        return jsonify({"message": "Menu extracted and inserted into DB.", "items": filtered_data}), 200
-    else:
-        return jsonify({"message": "No valid menu data found in the image."}), 200
-    
+        ignore_phrases = ["preparation time", "serving size", "cooking time", "calories"]
+        filtered_menu = [
+            entry for entry in menu
+            if not any(phrase in (entry["item"] + " " + entry["category"] + " " + entry.get("description", "")).lower()
+                       for phrase in ignore_phrases)
+        ]
+
+        if filtered_menu:
+            insert_into_mysql(filtered_menu, vender_id=vender_id, **mysql_config)
+            return jsonify({"message": "Menu data extracted and inserted successfully.", "records": len(filtered_menu)}), 200
+        else:
+            return jsonify({"message": "No valid menu items detected."}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Processing failed: {str(e)}"}), 500
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'folder':
         vender_id = 1
