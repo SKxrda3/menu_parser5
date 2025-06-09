@@ -349,12 +349,6 @@ def upload_menu():
     except Exception as e:
         return jsonify({"error": f"Processing failed: {str(e)}"}), 500
 
-# if __name__ == "__main__":
-#     if len(sys.argv) > 1 and sys.argv[1] == 'folder':
-#         vender_id = 1
-#         process_folder("menu1", mysql_config, vender_id)
-#     else:
-#         app.run(debug=False)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'folder':
